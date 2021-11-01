@@ -7,6 +7,7 @@ from plotly.subplots import make_subplots
 import plotly.express as px
 from dash.dependencies import Input, Output
 
+
 st.set_page_config(page_title='Electric Car Dashboard', layout='wide')
 
 col1, col2 = st.columns(2)
@@ -43,6 +44,11 @@ def get_data(filename):
 
 df = pd.read_csv('clean_data_latest.csv').head(50)
 
+# Format USD Files
+def format_to_USD(usd_price):
+    formatted_float = "${:,.2f}".format(usd_price)
+    return formatted_float
+
 # Sidebar
 with project_details:
     st.sidebar.header('Interactive Controls')
@@ -50,9 +56,12 @@ with project_details:
    
     # Multiselect
     car_select = st.sidebar.multiselect('Type of Car', options=df['Name'].unique(), default=df['Name'].head(10))
-    slider_price = st.sidebar.slider('Select Price Range (USD)', max_value=300000, min_value=10000)
-    st.sidebar.write('Selected Price:', slider_price, 'USD')
+    slider_price = st.sidebar.slider('Select Price Range (USD)', max_value=300000, min_value=10000, value=200000)
+    st.sidebar.write('Selected Price:', format_to_USD(slider_price), 'USD')
     drive_price = st.sidebar.selectbox('Select Type of Drive/Power:', options=df['Power'].unique())
+
+    #if st.button('Reset Filters'):
+        
 
 
     df_query = df.query('Name==@car_select & Price_USD<=@slider_price & Power==@drive_price')
@@ -100,24 +109,9 @@ with comparison_chart:
     col1.header('The Price Of Turning Electric')
     col1.text('Tesla and Porsche remains the top tier brands, price-wise.')
 
-    most_exp = df.Price_USD.max()
+    usd_price = df.Price_USD.max()
 
-    #most_exp_format = "${:,2f}".format(most_exp)
-    #name_exp = df.get('Name' in most_exp)
-    col1.metric('Most Expensive:', most_exp, 'Porsche Taycan Turbo S')
-    #col1.metric('Least Expensive:', '90000', 'Tesla')
-
-    #fig2 = px.line(df, x='Name', y='Price_USD', title='Price of cars comparison',
-        #labels={'Price_USD': 'Price in USD'})
-
-    #max_depth = col2.slider('Explore the range of prices', min_value=10, max_value=300000, value=50000, step=10)
-
-    #n_seats = pd.DataFrame(df['NumberofSeats']).value_counts()
-    #st.selectbox(n_seats, options=['1-5', '6-10', '11-15', '16-above'], index=0)
-
-    #n_estimators = sel_col.selectbox('Pick any number of seats', options=['1-5', '6-10', '11-15', '16-above'], index=0)
-
-    # This is the Bar Graph
+    col1.metric('Overall The Most Expensive Car:', format_to_USD(usd_price), 'Porsche Taycan Turbo S')
 
     fig2 = px.bar(df_query, x='Name', y='Price_USD', title='Price of cars comparison',
         labels={'Price_USD': 'Price in USD',
@@ -135,37 +129,21 @@ with fast_data:
     col1.text('Modern day electric vehicles have come a long way.')
 
     fastest = df['Speed New'].max()
-    col1.metric('Fastest Car:', fastest, 'Porsche Taycan Turbo S')
+    col1.metric('Overall The Fastest Car:', fastest, 'Tesla Roadster')
 
     df = pd.read_csv('clean_data_latest.csv')
 
 
-    fig3 = px.scatter(df_query, x='Speed New', y='Name', title='A Comparison', size='Price_USD', color='Range (ml)',
-                  labels={'Speed New': 'Speed (MPH)',
+    fig3 = px.scatter(df_query, x='Name', y='Top Speed (KM/H)', title='A Comparison', size='Price_USD', color='Top Speed (KM/H)',
+                  labels={'Top Speed (KM/H)': 'Top Speed (KM/H)',
                          'Price_USD': 'Price in USD',
-                         'Range (ml)': 'Car Range'})
+                         'Range (ml)': 'Car Range'},
+                         color_discrete_sequence=["red", "blue"])
 
-    fig3.update_layout(paper_bgcolor = '#1D1D1D', yaxis=dict(gridcolor='#3E3E3E'), xaxis=dict(gridcolor='#3E3E3E') )
+    fig3.update_layout(paper_bgcolor = '#1D1D1D', yaxis=dict(gridcolor='#3E3E3E'), xaxis=dict(gridcolor='#3E3E3E'))
 
     col1.write(fig3)
 
-    # min_range = 10
-    # max_range = 1000
-    
-    # @app.callback(Output('Range (ml)','figure'),Input('slider','value'))
-    # def build_chart_by_range(min_range, max_range):
-    #     filtered_data = df[(df['Range (ml)']>=min_range)&(df['Range (ml)']<=max_range)]
-    #     fig1 = px.scatter(df, x='Speed New', y='Name', title='A Comparison', size='Price_USD', color='Battery_clean',
-    #             labels={'Speed New': 'Speed (MPH)',
-    #                     'Price_USD': 'Price in USD',
-    #                     'Battery_clean': 'Strength of Battery (KWH)'})
-    #     return fig1
-    
-    
-   
-   #st.write(fig1)
-    #x = st.slider('Select Car Range', max_value=1000)
-    #st.write('Car Range:', x)
 
 with battery_data:
     col1.header('Battery Life: An Analysis')
@@ -174,10 +152,23 @@ with battery_data:
     fig4 = px.bar(df_query, x='Power', y='Battery_clean', color='Name', labels={'Battery_clean': 'Strength of Battery (KWH)',
                          'Power': 'Type of Drive/Power'})
 
-    fig4.update_layout(barmode='group', xaxis_tickangle=-45, yaxis=dict(gridcolor='#3E3E3E'))
+    fig4.update_layout(barmode='group', xaxis_tickangle=-45, yaxis=dict(gridcolor='#3E3E3E'), paper_bgcolor = '#1D1D1D')
 
     col1.write(fig4)
 
+    # if drive_price(events=[Event('backward-button', 'click'):
+    #     max_battery = df['Battery_clean'].max()
+    #     col1.text(f'The best battery for this query is {max_battery}')
+    # else:
+    #     st.write('Please use the sliders on the left to begin interacting with this graph.')
+
 with footer:
     st.text('Data from newsapi.org, https://www.kaggle.com/kkhandekar/cheapest-electric-cars \nAdditional tutorials from: Youtube (@Coding is fun, @Misra Turp). \nEV Data Analysis by Nikki Espartinez, 2021©')
+
+    hide_streamlit_style = """
+	<style>
+	/* This is to hide hamburger menu completely */
+	#MainMenu {visibility: hidden;} </style>"""
+    
+    st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
