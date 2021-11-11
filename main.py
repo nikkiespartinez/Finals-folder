@@ -53,26 +53,35 @@ def format_to_USD(usd_price):
 with project_details:
     st.sidebar.header('Interactive Controls')
     st.sidebar.text('Please use the following \nfilters to interact with the \ngraphs on the right')
-   
-    # Multiselect
-    car_select = st.sidebar.multiselect('Type of Car', options=df['Name'].unique(), default=df['Name'].head(10))
-    slider_price = st.sidebar.slider('Select Price Range (USD)', max_value=300000, min_value=10000, value=200000)
-    st.sidebar.write('Selected Price:', format_to_USD(slider_price), 'USD')
-    drive_price = st.sidebar.selectbox('Select Type of Drive/Power:', options=df['Power'].unique())
 
-    #if st.button('Reset Filters'):
-        
+    #sidebar_filters = st.sidebar
 
+    with st.form(key ='Form1'):
+        with st.sidebar:
+            car_select = st.multiselect('Type of Car:', options=df['Name'].unique(), default=df['Name'].head(10))
+            slider_price = st.slider('Select Maximum Budget:', max_value=300000, min_value=10000, value=200000)
+            st.write('Selected Max Budget:', format_to_USD(slider_price), 'USD')
+            drive_price = st.multiselect('Select Type of Drive/Power:', options=df['Power'].unique(), default=df['Power'].head(5))
+            submit = st.form_submit_button(label = 'Submit')
+    
+    # with sidebar_filters:
+    #     with st.form(key= 'filters'):
+    #         car_select = st.multiselect('Type of Car:', options=df['Name'].unique(), default=df['Name'].head(10))
+    #         slider_price = st.slider('Select Maximum Budget:', max_value=300000, min_value=10000, value=200000)
+    #         st.write('Selected Max Budget:', format_to_USD(slider_price), 'USD')
+    #         drive_price = st.multiselect('Select Type of Drive/Power:', options=df['Power'].unique(), default=df['Power'].head(5))
+    #         submit = st.form_submit_button(label = 'Submit')
 
-    df_query = df.query('Name==@car_select & Price_USD<=@slider_price & Power==@drive_price')
-    #df_slider1 = df.query('Price_USD==@slider_price')
+        if submit:
+            st.sidebar.write('EV Models:', car_select, 'Max price:', slider_price, 'Type of Drive/Power:', drive_price)
+
+    df_query = df.query('Name==@car_select | Price_USD<=@slider_price | Power==@drive_price')
+    st.sidebar.write('EV Models:', car_select, 'Max price:', slider_price, 'Type of Drive/Power:', drive_price, 'Results:', df_query)
     
     about = st.sidebar.button('About this project')
     if about:
         st.sidebar.text('This is a Python project \nby Nikki Espartinez. \nBuilt with Streamlit, \nPandas, Python 8 & Plotly. \nThank you General Assembly and \nCraig for the guidance.')
-    # st.sidebar.text('Why? Because we want to be a \nlot more informed with this \nemerging innovation in the \nautomobile/transportation industry \nthrough data.')
-    # st.sidebar.header('About the Maker')
-    # st.sidebar.text('Nikki Espartinez is a Designer, \nWriter & a Qualitative User \nResearcher. This is her first time \ntaking up a bootcamp in \nPython Programming. \nThe experience has been fulfilling, \nchallenging and humbling.')
+
 
 # Table of news data
 with news_data:
@@ -91,19 +100,6 @@ with news_data:
         #col1.expander("More Information")
         col2.text("These are news articles gathered from the open-source API site called newsapi.org. \nData was cleaned, published October 2021.")
 
-    #news_data = get_data('headlines_ev.csv')
-
-    # fig = go.Figure(data=go.Table(header=dict(values=list(df[['Title', 'Source', 'URL']].columns),
-    #                                      fill_color='#eeeeee',
-    #                                      align='left'), cells=dict(values=[df.Title, df.Source, df.URL],
-    #                                                               fill_color='#FCFCFC',
-    #                                                               align='left')))
-    # fig.update_layout(
-    # height=800,
-    # showlegend=False,
-    # )
-    
-    # fig.show()
 
 with comparison_chart:
     col1.header('The Price Of Turning Electric')
@@ -111,12 +107,12 @@ with comparison_chart:
 
     usd_price = df.Price_USD.max()
 
-    col1.metric('Overall The Most Expensive Car:', format_to_USD(usd_price), 'Porsche Taycan Turbo S')
+    col1.metric('Overall The Most Expensive Car:', format_to_USD(usd_price), 'Tesla Roadster')
 
     fig2 = px.bar(df_query, x='Name', y='Price_USD', title='Price of cars comparison',
         labels={'Price_USD': 'Price in USD',
         'Battery_clean': 'Strength of Battery (KWH)'},
-        hover_data=['Top Speed (KM/H)'], color='Battery_clean')
+        hover_data=['Top Speed (KM/H)', 'Battery_clean'])
 
     fig2.update_traces(marker_color='#208BB9', marker_line_color='rgb(8,48,107)', marker_line_width=1.5)
     fig2.update_layout(paper_bgcolor = '#1D1D1D', yaxis=dict(gridcolor='#3E3E3E'), xaxis_tickangle=-45)
